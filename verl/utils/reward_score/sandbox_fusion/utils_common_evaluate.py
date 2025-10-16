@@ -71,6 +71,13 @@ def call_sandbox_api(
         logger.error(error_msg)
         return None, error_msg
 
+    if "special_judge_program" in in_outs:
+        special_judge_program = in_outs["special_judge_program"]
+        special_judge_language = in_outs.get("special_judge_language", "python")
+    else:
+        special_judge_program = None
+        special_judge_language = None
+
     payload = json.dumps(
         {
             "completion": code,
@@ -84,7 +91,9 @@ def call_sandbox_api(
                 }, 
                 'extra': {
                     'run_all_cases': run_all_cases, 
-                    'total_timeout': total_timeout
+                    'total_timeout': total_timeout,
+                    'special_judge_program': special_judge_program,
+                    'special_judge_language': special_judge_language,
                 }
             }
                             
