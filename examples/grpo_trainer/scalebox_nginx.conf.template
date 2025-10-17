@@ -1,0 +1,54 @@
+events {
+    worker_connections  1048576;
+}
+http {
+    # Define a custom log format that includes upstream server info
+    log_format upstream_log '$remote_addr - $remote_user [$time_local] '
+                           '$request $status $body_bytes_sent '
+                           '$http_referer $http_user_agent '
+                           'upstream_addr=$upstream_addr '
+                           'upstream_status=$upstream_status '
+                           'upstream_response_time=$upstream_response_time '
+                           'upstream_connect_time=$upstream_connect_time '
+                           'request_time=$request_time';
+
+    # Use the custom log format for access logs
+    access_log /var/log/nginx/access.log upstream_log;
+
+    upstream myapp1 {
+${ADDRESS_LIST}
+    }
+    server {
+        listen 8082;
+        listen [::]:8082;
+        server_name localhost;
+
+        location / {
+            proxy_pass http://myapp1;
+            
+            # Optional: Add headers to pass upstream info to the backend
+            proxy_set_header X-Upstream-Addr $upstream_addr;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $host;
+        }
+    }
+    server {
+        listen 81 default_server;
+        listen [::]:81 default_server;
+        root /var/www/html;
+        index index.html index.htm index.nginx-debian.html;
+        server_name _;
+        location / {
+            try_files  / =404;
+        }
+        location /nginx_status {
+                stub_status;
+                # allow 127.0.0.1;
+                # deny all;
+            }
+    }    
+    client_max_body_size 128M;
+    fastcgi_read_timeout 600;
+    proxy_read_timeout 600;
+}
